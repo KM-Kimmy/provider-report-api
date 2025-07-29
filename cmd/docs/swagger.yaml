@@ -1,0 +1,677 @@
+basePath: /api/v1
+definitions:
+  dtos.APIResponse:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  dtos.CreateProviderRequestDTO:
+    properties:
+      business_type:
+        type: string
+      general_phone_no:
+        type: string
+      is_tpa_network:
+        type: boolean
+      name_eng:
+        type: string
+      name_thai:
+        type: string
+      provider_code:
+        type: string
+      provider_status:
+        type: string
+      provider_type:
+        type: string
+      province:
+        type: string
+    required:
+    - name_thai
+    - provider_code
+    - provider_type
+    - province
+    type: object
+  dtos.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      details:
+        type: string
+      message:
+        type: string
+    type: object
+  dtos.PaginatedResponse:
+    properties:
+      data: {}
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  dtos.ProviderDTO:
+    properties:
+      bank_account_number:
+        type: string
+      bank_account_type:
+        type: string
+      bank_branch_name:
+        type: string
+      bank_name:
+        type: string
+      bed_size:
+        type: string
+      building_no:
+        type: string
+      business_type:
+        type: string
+      country:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      department:
+        type: string
+      direct_phone_no:
+        type: string
+      discount_categories:
+        items:
+          type: string
+        type: array
+      district:
+        type: string
+      eligibility_method:
+        type: string
+      email:
+        type: string
+      email_cc_list:
+        type: string
+      email_to_list:
+        type: string
+      exempt_percent:
+        type: number
+      general_phone_no:
+        type: string
+      has_incident:
+        type: boolean
+      id:
+        type: integer
+      is_tpa_network:
+        type: boolean
+      lane_alley:
+        type: string
+      name_eng:
+        type: string
+      name_thai:
+        type: string
+      opening_time:
+        type: string
+      payee_name:
+        type: string
+      payment_branch_id:
+        type: string
+      payment_method:
+        type: string
+      post_code:
+        type: string
+      pricing_categories:
+        items:
+          type: string
+        type: array
+      provider_code:
+        type: string
+      provider_status:
+        type: string
+      provider_tax_id:
+        type: string
+      provider_type:
+        type: string
+      province:
+        type: string
+      region:
+        type: string
+      register_status:
+        type: string
+      road:
+        type: string
+      sub_district:
+        type: string
+      title_eng:
+        type: string
+      title_name:
+        type: string
+      title_thai:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+      village_no:
+        type: string
+      wh_tax_exempt_from:
+        type: string
+      wh_tax_exempt_to:
+        type: string
+      wh_tax_percent:
+        type: number
+    type: object
+  dtos.ProviderReportDataDTO:
+    properties:
+      header:
+        additionalProperties: true
+        type: object
+      providers:
+        items:
+          $ref: '#/definitions/dtos.ProviderDTO'
+        type: array
+      summary:
+        $ref: '#/definitions/dtos.ProviderSummaryDTO'
+      total:
+        type: integer
+    type: object
+  dtos.ProviderReportRequestDTO:
+    properties:
+      custom_fields:
+        items:
+          type: string
+        type: array
+      format_type:
+        description: excel, pdf, word
+        type: string
+      search_params:
+        $ref: '#/definitions/dtos.ProviderSearchRequestDTO'
+      template_id:
+        type: integer
+    type: object
+  dtos.ProviderSearchRequestDTO:
+    properties:
+      business_type:
+        type: string
+      created_from:
+        type: string
+      created_to:
+        type: string
+      is_tpa_network:
+        type: boolean
+      limit:
+        type: integer
+      page:
+        type: integer
+      provider_name:
+        type: string
+      provider_type:
+        type: string
+      province_name:
+        type: string
+    type: object
+  dtos.ProviderStatsDTO:
+    properties:
+      active_providers:
+        type: integer
+      inactive_providers:
+        type: integer
+      total_clinics:
+        type: integer
+      total_hospitals:
+        type: integer
+      total_providers:
+        type: integer
+      tpa_network_providers:
+        type: integer
+    type: object
+  dtos.ProviderSummaryDTO:
+    properties:
+      clinic:
+        type: integer
+      grand_total:
+        type: integer
+      hospital:
+        type: integer
+      province:
+        type: string
+      type:
+        type: string
+    type: object
+  dtos.UpdateProviderRequestDTO:
+    properties:
+      business_type:
+        type: string
+      general_phone_no:
+        type: string
+      is_tpa_network:
+        type: boolean
+      name_eng:
+        type: string
+      name_thai:
+        type: string
+      provider_status:
+        type: string
+      provider_type:
+        type: string
+      province:
+        type: string
+    required:
+    - name_thai
+    - provider_type
+    - province
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for Provider Detail Report Management System
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Provider Detail Report API
+  version: "1.0"
+paths:
+  /providers:
+    post:
+      consumes:
+      - application/json
+      description: Create a new provider
+      parameters:
+      - description: Create provider request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateProviderRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.ProviderDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Create a new provider
+      tags:
+      - providers
+  /providers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete provider by ID
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Delete provider
+      tags:
+      - providers
+    get:
+      consumes:
+      - application/json
+      description: Get provider by ID
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.ProviderDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Get provider by ID
+      tags:
+      - providers
+    put:
+      consumes:
+      - application/json
+      description: Update provider by ID
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update provider request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UpdateProviderRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.ProviderDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Update provider
+      tags:
+      - providers
+  /providers/export:
+    post:
+      consumes:
+      - application/json
+      description: Export provider report in specified format
+      parameters:
+      - description: Export request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ProviderReportRequestDTO'
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Exported file
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Export provider report
+      tags:
+      - providers
+  /providers/provinces:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all provinces
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Get all provinces
+      tags:
+      - providers
+  /providers/report:
+    post:
+      consumes:
+      - application/json
+      description: Generate provider report with specified criteria
+      parameters:
+      - description: Report request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ProviderReportRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.ProviderReportDataDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Generate provider report
+      tags:
+      - providers
+  /providers/search:
+    get:
+      consumes:
+      - application/json
+      description: Search providers with filters
+      parameters:
+      - description: Provider name
+        in: query
+        name: provider_name
+        type: string
+      - description: Is TPA Network
+        in: query
+        name: is_tpa_network
+        type: boolean
+      - description: Province name
+        in: query
+        name: province_name
+        type: string
+      - description: Provider type
+        in: query
+        name: provider_type
+        type: string
+      - description: Business type
+        in: query
+        name: business_type
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.PaginatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Search providers
+      tags:
+      - providers
+  /providers/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get provider statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.ProviderStatsDTO'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Get provider statistics
+      tags:
+      - providers
+  /providers/summary:
+    get:
+      consumes:
+      - application/json
+      description: Get provider summary statistics
+      parameters:
+      - description: Provider name
+        in: query
+        name: provider_name
+        type: string
+      - description: Province name
+        in: query
+        name: province_name
+        type: string
+      - description: Provider type
+        in: query
+        name: provider_type
+        type: string
+      - description: Business type
+        in: query
+        name: business_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dtos.ProviderSummaryDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Get provider summary
+      tags:
+      - providers
+  /providers/types:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all provider types
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/dtos.APIResponse'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Get all provider types
+      tags:
+      - providers
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
