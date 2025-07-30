@@ -6,7 +6,7 @@ import (
 
     "github.com/gin-gonic/gin"
     "github.com/joho/godotenv"
-    "provider-report-api/configs"
+    config "provider-report-api/configs" 
     "provider-report-api/internal/middleware"
     providerControllers "provider-report-api/internal/modules/provider-detail/controllers"
     providerRepositories "provider-report-api/internal/modules/provider-detail/repositories"
@@ -100,13 +100,26 @@ func main() {
         // Provider Detail Report routes
         providers := api.Group("/providers")
         {
+            // CRUD Operations (ตาม Swagger spec)
+            providers.POST("", providerController.CreateProvider)           // Create new provider
+            providers.GET("/:id", providerController.GetProviderByID)       // Get provider by ID
+            providers.PUT("/:id", providerController.UpdateProvider)        // Update provider
+            providers.DELETE("/:id", providerController.DeleteProvider)     // Delete provider
+            
+            // Search and Filter Operations
             providers.GET("/search", providerController.SearchProviders)
+            
+            // Report Operations
             providers.POST("/report", providerController.GenerateReport)
             providers.POST("/export", providerController.ExportReport)
+            
+            // Summary and Statistics
             providers.GET("/summary", providerController.GetProviderSummary)
+            providers.GET("/stats", providerController.GetProviderStats)
+            
+            // Reference Data
             providers.GET("/provinces", providerController.GetProvinces)
             providers.GET("/types", providerController.GetProviderTypes)
-            providers.GET("/stats", providerController.GetProviderStats)
         }
 
         // Template Management routes
