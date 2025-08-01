@@ -100,9 +100,9 @@ func main() {
         // Provider Detail Report routes
         providers := api.Group("/providers")
         {
-            // CRUD Operations (ตาม Swagger spec)
+            // CRUD Operations (แก้ไข method name)
             providers.POST("", providerController.CreateProvider)           // Create new provider
-            providers.GET("/:id", providerController.GetProviderByID)       // Get provider by ID
+            providers.GET("/:id", providerController.GetProvider)           // แก้จาก GetProviderByID เป็น GetProvider
             providers.PUT("/:id", providerController.UpdateProvider)        // Update provider
             providers.DELETE("/:id", providerController.DeleteProvider)     // Delete provider
             
