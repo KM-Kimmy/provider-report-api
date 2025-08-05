@@ -8,7 +8,7 @@ import (
     "time"
 
     "github.com/xuri/excelize/v2"
-    "provider-report-api/configs"
+    config "provider-report-api/configs" // ใช้ alias
     "provider-report-api/internal/modules/provider-detail/dtos"
     "provider-report-api/internal/modules/provider-detail/repositories"
 )
@@ -562,10 +562,9 @@ func NewEmailService(cfg *config.Config) *EmailService {
 }
 
 func (s *EmailService) SendEmail(to, subject, body string, attachment []byte, filename string) error {
-    // TODO: Implement actual email sending
-    // This is a placeholder implementation
-    
-    auth := smtp.PlainAuth("", s.config.SMTPUsername, s.config.SMTPPassword, s.config.SMTPHost)
+    // แก้ไขจาก s.config.SMTPUsername เป็น s.config.SMTPUser
+    // แก้ไขจาก s.config.SMTPPassword เป็น s.config.SMTPPass
+    auth := smtp.PlainAuth("", s.config.SMTPUser, s.config.SMTPPass, s.config.SMTPHost)
     
     msg := fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s", to, subject, body)
     

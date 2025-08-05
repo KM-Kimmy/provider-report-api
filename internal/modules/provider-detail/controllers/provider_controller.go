@@ -6,8 +6,11 @@ import (
 
     "github.com/gin-gonic/gin"
     "provider-report-api/internal/modules/provider-detail/dtos"
+    "provider-report-api/internal/modules/provider-detail/repositories"
     "provider-report-api/internal/modules/provider-detail/services"
 )
+
+// ================= PROVIDER CONTROLLER =================
 
 type ProviderController struct {
     providerService *services.ProviderService
@@ -84,20 +87,6 @@ func (c *ProviderController) SearchProviders(ctx *gin.Context) {
     })
 }
 
-// GetProviderSummary godoc
-// @Summary Get provider summary
-// @Description Get provider summary statistics
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Param provider_name query string false "Provider name"
-// @Param province_name query string false "Province name"
-// @Param provider_type query string false "Provider type"
-// @Param business_type query string false "Business type"
-// @Success 200 {object} dtos.APIResponse{data=dtos.ProviderSummaryDTO}
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/summary [get]
 func (c *ProviderController) GetProviderSummary(ctx *gin.Context) {
     var req dtos.ProviderSearchRequestDTO
     if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -126,17 +115,6 @@ func (c *ProviderController) GetProviderSummary(ctx *gin.Context) {
     })
 }
 
-// GenerateReport godoc
-// @Summary Generate provider report
-// @Description Generate provider report with specified criteria
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Param request body dtos.ProviderReportRequestDTO true "Report request"
-// @Success 200 {object} dtos.APIResponse{data=dtos.ProviderReportDataDTO}
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/report [post]
 func (c *ProviderController) GenerateReport(ctx *gin.Context) {
     var req dtos.ProviderReportRequestDTO
     if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -165,17 +143,6 @@ func (c *ProviderController) GenerateReport(ctx *gin.Context) {
     })
 }
 
-// ExportReport godoc
-// @Summary Export provider report
-// @Description Export provider report in specified format
-// @Tags providers
-// @Accept json
-// @Produce application/octet-stream
-// @Param request body dtos.ProviderReportRequestDTO true "Export request"
-// @Success 200 {file} file "Exported file"
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/export [post]
 func (c *ProviderController) ExportReport(ctx *gin.Context) {
     var req dtos.ProviderReportRequestDTO
     if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -205,15 +172,6 @@ func (c *ProviderController) ExportReport(ctx *gin.Context) {
     ctx.Data(http.StatusOK, contentType, fileData)
 }
 
-// GetProvinces godoc
-// @Summary Get all provinces
-// @Description Get list of all provinces
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Success 200 {object} dtos.APIResponse{data=[]string}
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/provinces [get]
 func (c *ProviderController) GetProvinces(ctx *gin.Context) {
     provinces, err := c.providerService.GetProvinces()
     if err != nil {
@@ -232,15 +190,6 @@ func (c *ProviderController) GetProvinces(ctx *gin.Context) {
     })
 }
 
-// GetProviderTypes godoc
-// @Summary Get all provider types
-// @Description Get list of all provider types
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Success 200 {object} dtos.APIResponse{data=[]string}
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/types [get]
 func (c *ProviderController) GetProviderTypes(ctx *gin.Context) {
     types, err := c.providerService.GetProviderTypes()
     if err != nil {
@@ -259,15 +208,6 @@ func (c *ProviderController) GetProviderTypes(ctx *gin.Context) {
     })
 }
 
-// GetProviderStats godoc
-// @Summary Get provider statistics
-// @Description Get provider statistics
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Success 200 {object} dtos.APIResponse{data=dtos.ProviderStatsDTO}
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/stats [get]
 func (c *ProviderController) GetProviderStats(ctx *gin.Context) {
     stats, err := c.providerService.GetProviderStats()
     if err != nil {
@@ -286,17 +226,6 @@ func (c *ProviderController) GetProviderStats(ctx *gin.Context) {
     })
 }
 
-// CreateProvider godoc
-// @Summary Create a new provider
-// @Description Create a new provider
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Param request body dtos.CreateProviderRequestDTO true "Create provider request"
-// @Success 201 {object} dtos.APIResponse{data=dtos.ProviderDTO}
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers [post]
 func (c *ProviderController) CreateProvider(ctx *gin.Context) {
     var req dtos.CreateProviderRequestDTO
     if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -325,18 +254,6 @@ func (c *ProviderController) CreateProvider(ctx *gin.Context) {
     })
 }
 
-// GetProvider godoc
-// @Summary Get provider by ID
-// @Description Get provider by ID
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Param id path int true "Provider ID"
-// @Success 200 {object} dtos.APIResponse{data=dtos.ProviderDTO}
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 404 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/{id} [get]
 func (c *ProviderController) GetProvider(ctx *gin.Context) {
     idStr := ctx.Param("id")
     id, err := strconv.Atoi(idStr)
@@ -366,19 +283,6 @@ func (c *ProviderController) GetProvider(ctx *gin.Context) {
     })
 }
 
-// UpdateProvider godoc
-// @Summary Update provider
-// @Description Update provider by ID
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Param id path int true "Provider ID"
-// @Param request body dtos.UpdateProviderRequestDTO true "Update provider request"
-// @Success 200 {object} dtos.APIResponse{data=dtos.ProviderDTO}
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 404 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/{id} [put]
 func (c *ProviderController) UpdateProvider(ctx *gin.Context) {
     idStr := ctx.Param("id")
     id, err := strconv.Atoi(idStr)
@@ -418,18 +322,6 @@ func (c *ProviderController) UpdateProvider(ctx *gin.Context) {
     })
 }
 
-// DeleteProvider godoc
-// @Summary Delete provider
-// @Description Delete provider by ID
-// @Tags providers
-// @Accept json
-// @Produce json
-// @Param id path int true "Provider ID"
-// @Success 200 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 404 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/{id} [delete]
 func (c *ProviderController) DeleteProvider(ctx *gin.Context) {
     idStr := ctx.Param("id")
     id, err := strconv.Atoi(idStr)
@@ -455,5 +347,504 @@ func (c *ProviderController) DeleteProvider(ctx *gin.Context) {
     ctx.JSON(http.StatusOK, dtos.APIResponse{
         Success: true,
         Message: "Provider deleted successfully",
+    })
+}
+
+// ================= TEMPLATE CONTROLLER =================
+
+type TemplateController struct {
+    templateService *services.TemplateService
+}
+
+func NewTemplateController(templateService *services.TemplateService) *TemplateController {
+    return &TemplateController{
+        templateService: templateService,
+    }
+}
+
+func (c *TemplateController) GetTemplates(ctx *gin.Context) {
+    templates, err := c.templateService.GetAllTemplates()
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get templates",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Templates retrieved successfully",
+        Data:    templates,
+    })
+}
+
+func (c *TemplateController) GetTemplate(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid template ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    template, err := c.templateService.GetTemplate(id)
+    if err != nil {
+        if err.Error() == "template not found" {
+            ctx.JSON(http.StatusNotFound, dtos.ErrorResponse{
+                Code:    http.StatusNotFound,
+                Message: "Template not found",
+                Details: err.Error(),
+            })
+            return
+        }
+
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get template",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Template retrieved successfully",
+        Data:    template,
+    })
+}
+
+func (c *TemplateController) CreateTemplate(ctx *gin.Context) {
+    var req dtos.CreateTemplateRequestDTO
+    
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid request body",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    template, err := c.templateService.CreateTemplate(req)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to create template",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusCreated, dtos.APIResponse{
+        Success: true,
+        Message: "Template created successfully",
+        Data:    template,
+    })
+}
+
+func (c *TemplateController) UpdateTemplate(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid template ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    var req dtos.UpdateTemplateRequestDTO
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid request body",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    template, err := c.templateService.UpdateTemplate(id, req)
+    if err != nil {
+        if err.Error() == "template not found" {
+            ctx.JSON(http.StatusNotFound, dtos.ErrorResponse{
+                Code:    http.StatusNotFound,
+                Message: "Template not found",
+                Details: err.Error(),
+            })
+            return
+        }
+
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to update template",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Template updated successfully",
+        Data:    template,
+    })
+}
+
+func (c *TemplateController) DeleteTemplate(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid template ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    err = c.templateService.DeleteTemplate(id)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to delete template",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Template deleted successfully",
+    })
+}
+
+// ================= SCHEDULE CONTROLLER =================
+
+type ScheduleController struct {
+    scheduleService *services.ScheduleService
+}
+
+func NewScheduleController(scheduleService *services.ScheduleService) *ScheduleController {
+    return &ScheduleController{
+        scheduleService: scheduleService,
+    }
+}
+
+func (c *ScheduleController) GetSchedules(ctx *gin.Context) {
+    schedules, err := c.scheduleService.GetAllSchedules()
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get schedules",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedules retrieved successfully",
+        Data:    schedules,
+    })
+}
+
+func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid schedule ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    schedule, err := c.scheduleService.GetSchedule(id)
+    if err != nil {
+        ctx.JSON(http.StatusNotFound, dtos.ErrorResponse{
+            Code:    http.StatusNotFound,
+            Message: "Schedule not found",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule retrieved successfully",
+        Data:    schedule,
+    })
+}
+
+func (c *ScheduleController) CreateSchedule(ctx *gin.Context) {
+    var req dtos.CreateScheduleRequestDTO
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid request body",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    schedule, err := c.scheduleService.CreateSchedule(req)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to create schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusCreated, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule created successfully",
+        Data:    schedule,
+    })
+}
+
+func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid schedule ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    var req dtos.UpdateScheduleRequestDTO
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid request body",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    schedule, err := c.scheduleService.UpdateSchedule(id, req)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to update schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule updated successfully",
+        Data:    schedule,
+    })
+}
+
+func (c *ScheduleController) DeleteSchedule(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid schedule ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    err = c.scheduleService.DeleteSchedule(id)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to delete schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule deleted successfully",
+    })
+}
+
+func (c *ScheduleController) RunSchedule(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid schedule ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    result, err := c.scheduleService.RunSchedule(id)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to run schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule executed successfully",
+        Data:    result,
+    })
+}
+
+// ================= LOG CONTROLLER =================
+
+type LogController struct {
+    logService *services.LogService
+}
+
+func NewLogController(logService *services.LogService) *LogController {
+    return &LogController{
+        logService: logService,
+    }
+}
+
+func (c *LogController) GetSentReportLogs(ctx *gin.Context) {
+    var req dtos.LogSearchRequestDTO
+    if err := ctx.ShouldBindQuery(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid query parameters",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    // Set default pagination
+    if req.Page == 0 {
+        req.Page = 1
+    }
+    if req.Limit == 0 {
+        req.Limit = 10
+    }
+
+    result, err := c.logService.GetSentReportLogs(req)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get sent report logs",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Sent report logs retrieved successfully",
+        Data:    result,
+    })
+}
+
+func (c *LogController) GetSentReportLog(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid log ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    log, err := c.logService.GetSentReportLog(id)
+    if err != nil {
+        ctx.JSON(http.StatusNotFound, dtos.ErrorResponse{
+            Code:    http.StatusNotFound,
+            Message: "Log not found",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Log retrieved successfully",
+        Data:    log,
+    })
+}
+
+// ================= FIELD CONTROLLER =================
+
+type FieldController struct {
+    fieldRepo *repositories.FieldRepository
+}
+
+func NewFieldController(fieldRepo *repositories.FieldRepository) *FieldController {
+    return &FieldController{
+        fieldRepo: fieldRepo,
+    }
+}
+
+func (c *FieldController) GetAvailableFields(ctx *gin.Context) {
+    fields, err := c.fieldRepo.GetAllFields()
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get available fields",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Available fields retrieved successfully",
+        Data:    fields,
+    })
+}
+
+func (c *FieldController) GetFieldsByCategory(ctx *gin.Context) {
+    category := ctx.Param("category")
+    
+    // Validate category
+    validCategories := map[string]bool{
+        "header":  true,
+        "data":    true,
+        "summary": true,
+    }
+    
+    if !validCategories[category] {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid category",
+            Details: "Category must be one of: header, data, summary",
+        })
+        return
+    }
+
+    fields, err := c.fieldRepo.GetFieldsByCategory(category)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get fields by category",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Fields retrieved successfully",
+        Data:    fields,
     })
 }
