@@ -2,6 +2,8 @@ package configs
 
 import (
     "os"
+    
+    _ "github.com/lib/pq" // PostgreSQL driver
 )
 
 type Config struct {

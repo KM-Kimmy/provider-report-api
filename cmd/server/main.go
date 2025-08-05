@@ -7,7 +7,7 @@ import (
     "github.com/gin-gonic/gin"
     "github.com/joho/godotenv"
     config "provider-report-api/configs" 
-    "provider-report-api/internal/middleware"
+    // "provider-report-api/internal/middleware"
     providerControllers "provider-report-api/internal/modules/provider-detail/controllers"
     providerRepositories "provider-report-api/internal/modules/provider-detail/repositories"
     providerServices "provider-report-api/internal/modules/provider-detail/services"
@@ -78,9 +78,11 @@ func main() {
     router := gin.Default()
 
     // Add middleware
-    router.Use(middleware.CORS())
-    router.Use(middleware.Logger())
     router.Use(gin.Recovery())
+    
+    // หากต้องการใช้ CORS และ Logger สามารถเพิ่ม middleware เหล่านี้ได้:
+    // router.Use(cors.Default()) // ต้อง import "github.com/gin-contrib/cors"
+    // router.Use(gin.Logger())   // ใช้ gin's built-in logger
 
     // Health check endpoint
     router.GET("/health", func(c *gin.Context) {
@@ -160,7 +162,7 @@ func main() {
 
     port := cfg.ServerPort
     if port == "" {
-        port = "8080"
+        port = "8777"
     }
 
     log.Printf("Server starting on port %s", port)
