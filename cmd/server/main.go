@@ -96,68 +96,15 @@ func main() {
     // Swagger endpoint
     router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-    // API routes
+    // Setup API routes - ย้าย routing logic ไปยัง controllers
     api := router.Group("/api/v1")
     {
-        // Provider Detail Report routes
-        providers := api.Group("/providers")
-        {
-            // CRUD Operations (แก้ไข method name)
-            providers.POST("", providerController.CreateProvider)           // Create new provider
-            providers.GET("/:id", providerController.GetProvider)           // แก้จาก GetProviderByID เป็น GetProvider
-            providers.PUT("/:id", providerController.UpdateProvider)        // Update provider
-            providers.DELETE("/:id", providerController.DeleteProvider)     // Delete provider
-            
-            // Search and Filter Operations
-            providers.GET("/search", providerController.SearchProviders)
-            
-            // Report Operations
-            providers.POST("/report", providerController.GenerateReport)
-            providers.POST("/export", providerController.ExportReport)
-            
-            // Summary and Statistics
-            providers.GET("/summary", providerController.GetProviderSummary)
-            providers.GET("/stats", providerController.GetProviderStats)
-            
-            // Reference Data
-            providers.GET("/provinces", providerController.GetProvinces)
-            providers.GET("/types", providerController.GetProviderTypes)
-        }
-
-        // Template Management routes
-        templates := api.Group("/templates")
-        {
-            templates.GET("", templateController.GetTemplates)
-            templates.GET("/:id", templateController.GetTemplate)
-            templates.POST("", templateController.CreateTemplate)
-            templates.PUT("/:id", templateController.UpdateTemplate)
-            templates.DELETE("/:id", templateController.DeleteTemplate)
-        }
-
-        // Schedule Management routes
-        schedules := api.Group("/schedules")
-        {
-            schedules.GET("", scheduleController.GetSchedules)
-            schedules.GET("/:id", scheduleController.GetSchedule)
-            schedules.POST("", scheduleController.CreateSchedule)
-            schedules.PUT("/:id", scheduleController.UpdateSchedule)
-            schedules.DELETE("/:id", scheduleController.DeleteSchedule)
-            schedules.POST("/:id/run", scheduleController.RunSchedule)
-        }
-
-        // Log Report routes
-        logs := api.Group("/logs")
-        {
-            logs.GET("/sent-reports", logController.GetSentReportLogs)
-            logs.GET("/sent-reports/:id", logController.GetSentReportLog)
-        }
-
-        // Available Fields routes
-        fields := api.Group("/fields")
-        {
-            fields.GET("", fieldController.GetAvailableFields)
-            fields.GET("/by-category/:category", fieldController.GetFieldsByCategory)
-        }
+        // Setup all routes through controllers
+        providerController.SetupRoutes(api)
+        templateController.SetupRoutes(api)
+        scheduleController.SetupRoutes(api)
+        logController.SetupRoutes(api)
+        fieldController.SetupRoutes(api)
     }
 
     port := cfg.ServerPort
