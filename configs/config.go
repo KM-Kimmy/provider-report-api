@@ -26,18 +26,18 @@ type Config struct {
 
 func Load() *Config {
     return &Config{
-        DatabaseDriver: getEnv("DB_DRIVER", "mssql"),           // เปลี่ยนจาก postgres เป็น mssql
+        DatabaseDriver: getEnv("DB_DRIVER", "mssql"),           
         DatabaseHost:   getEnv("DB_HOST", "localhost"),
-        DatabasePort:   getEnv("DB_PORT", "1433"),             // เปลี่ยนจาก 5432 เป็น 1433
+        DatabasePort:   getEnv("DB_PORT", "1433"),             
         DatabaseName:   getEnv("DB_NAME", "tpacaredb"),
         DatabaseUser:   getEnv("DB_USER", "dcsnewcoretpa"),
-        DatabasePass:   getEnv("DB_PASSWORD", "TPA@mindcs!2"), // ใช้ DB_PASSWORD แทน DB_PASS
-        ServerPort:     getEnv("PORT", "8777"),                // ใช้ PORT แทน SERVER_PORT
+        DatabasePass:   getEnv("DB_PASSWORD", "TPA@mindcs!2"), 
+        ServerPort:     getEnv("PORT", "8777"),                
         JWTSecret:      getEnv("JWT_SECRET", "your-secret-key"),
         SMTPHost:       getEnv("SMTP_HOST", "smtp.gmail.com"),
         SMTPPort:       getEnv("SMTP_PORT", "587"),
-        SMTPUser:       getEnv("SMTP_USERNAME", ""),           // ใช้ SMTP_USERNAME
-        SMTPPass:       getEnv("SMTP_PASSWORD", ""),           // ใช้ SMTP_PASSWORD
+        SMTPUser:       getEnv("SMTP_USERNAME", ""),           
+        SMTPPass:       getEnv("SMTP_PASSWORD", ""),          
         SMTPFrom:       getEnv("SMTP_FROM", "noreply@company.com"),
         Environment:    getEnv("ENVIRONMENT", "development"),
     }

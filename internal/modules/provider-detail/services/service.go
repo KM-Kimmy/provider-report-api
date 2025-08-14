@@ -134,6 +134,10 @@ func (s *ProviderService) CreateProvider(req dtos.CreateProviderRequestDTO) (*dt
     return provider, nil
 }
 
+func (s *ProviderService) GetProvider(id int) (*dtos.ProviderDTO, error) {
+    return s.providerRepo.GetByID(id)
+}
+
 func (s *ProviderService) GetProviderByID(id int) (*dtos.ProviderDTO, error) {
     return s.providerRepo.GetByID(id)
 }

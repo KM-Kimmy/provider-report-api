@@ -22,44 +22,92 @@ func NewProviderController(providerService *services.ProviderService) *ProviderC
     }
 }
 
-// SetupRoutes sets up all provider-related routes
-func (c *ProviderController) SetupRoutes(api *gin.RouterGroup) {
-    providers := api.Group("/providers")
-    {
-        // CRUD Operations
-        providers.POST("", c.CreateProvider)           // Create new provider
-        providers.GET("/:id", c.GetProvider)           // Get provider by ID
-        providers.PUT("/:id", c.UpdateProvider)        // Update provider
-        providers.DELETE("/:id", c.DeleteProvider)     // Delete provider
-        
-        // Search and Filter Operations
-        providers.GET("/search", c.SearchProviders)
-        
-        // Report Operations
-        providers.POST("/report", c.GenerateReport)
-        providers.POST("/export", c.ExportReport)
-        
-        // Summary and Statistics
-        providers.GET("/summary", c.GetProviderSummary)
-        providers.GET("/stats", c.GetProviderStats)
-        
-        // Reference Data
-        providers.GET("/provinces", c.GetProvinces)
-        providers.GET("/types", c.GetProviderTypes)
-    }
+func InitializeProviderDetailController(
+	providerRoute *gin.RouterGroup,
+	providerService *services.ProviderService,
+	templateService *services.TemplateService,
+	scheduleService *services.ScheduleService,
+	logService *services.LogService,
+	fieldRepo *repositories.FieldRepository,
+) {
+	// Initialize controllers with their dependencies
+	providerController := NewProviderController(providerService)
+	templateController := NewTemplateController(templateService)
+	scheduleController := NewScheduleController(scheduleService)
+	logController := NewLogController(logService)
+	fieldController := NewFieldController(fieldRepo)
+
+	providers := providerRoute.Group("/providers")
+	{
+		// Provider CRUD Operations
+		providers.POST("", providerController.CreateProvider)           // Create new provider
+		providers.GET("/:id", providerController.GetProvider)           // Get provider by ID
+		providers.PUT("/:id", providerController.UpdateProvider)        // Update provider
+		providers.DELETE("/:id", providerController.DeleteProvider)     // Delete provider
+		
+		// Provider Search and Filter Operations
+		providers.GET("/search", providerController.SearchProviders)
+		
+		// Provider Report Operations
+		providers.POST("/report", providerController.GenerateReport)
+		providers.POST("/export", providerController.ExportReport)
+		
+		// Provider Summary and Statistics
+		providers.GET("/summary", providerController.GetProviderSummary)
+		providers.GET("/stats", providerController.GetProviderStats)
+		
+		// Provider Reference Data
+		providers.GET("/provinces", providerController.GetProvinces)
+		providers.GET("/types", providerController.GetProviderTypes)
+	}
+
+	// Template Routes
+	templates := providerRoute.Group("/templates")
+	{
+		templates.GET("", templateController.GetTemplates)
+		templates.GET("/:id", templateController.GetTemplate)
+		templates.POST("", templateController.CreateTemplate)
+		templates.PUT("/:id", templateController.UpdateTemplate)
+		templates.DELETE("/:id", templateController.DeleteTemplate)
+	}
+
+	// Schedule Routes
+	schedules := providerRoute.Group("/schedules")
+	{
+		schedules.GET("", scheduleController.GetSchedules)
+		schedules.GET("/:id", scheduleController.GetSchedule)
+		schedules.POST("", scheduleController.CreateSchedule)
+		schedules.PUT("/:id", scheduleController.UpdateSchedule)
+		schedules.DELETE("/:id", scheduleController.DeleteSchedule)
+		schedules.POST("/:id/run", scheduleController.RunSchedule)
+	}
+
+	// Log Routes
+	logs := providerRoute.Group("/logs")
+	{
+		logs.GET("/sent-reports", logController.GetSentReportLogs)
+		logs.GET("/sent-reports/:id", logController.GetSentReportLog)
+	}
+
+	// Field Routes
+	fields := providerRoute.Group("/fields")
+	{
+		fields.GET("", fieldController.GetAvailableFields)
+		fields.GET("/by-category/:category", fieldController.GetFieldsByCategory)
+	}
 }
 
 // CreateProvider godoc
 // @Summary Create a new provider
 // @Description Create a new provider with the provided information
-// @Tags providers
+// @Tags providerDetail
 // @Accept json
 // @Produce json
 // @Param provider body dtos.CreateProviderRequestDTO true "Provider data"
 // @Success 201 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers [post]
+// @Router /provider-detail/providers [post]
 // @Security BearerAuth
 func (c *ProviderController) CreateProvider(ctx *gin.Context) {
     var req dtos.CreateProviderRequestDTO
@@ -92,13 +140,13 @@ func (c *ProviderController) CreateProvider(ctx *gin.Context) {
 // GetProvider godoc
 // @Summary Get provider by ID
 // @Description Get a single provider by its ID
-// @Tags providers
+// @Tags providerDetail
 // @Produce json
 // @Param id path int true "Provider ID"
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
-// @Router /providers/{id} [get]
+// @Router /provider-detail/providers/{id} [get]
 // @Security BearerAuth
 func (c *ProviderController) GetProvider(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -132,7 +180,7 @@ func (c *ProviderController) GetProvider(ctx *gin.Context) {
 // UpdateProvider godoc
 // @Summary Update provider
 // @Description Update provider information by ID
-// @Tags providers
+// @Tags providerDetail
 // @Accept json
 // @Produce json
 // @Param id path int true "Provider ID"
@@ -140,7 +188,7 @@ func (c *ProviderController) GetProvider(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/{id} [put]
+// @Router /provider-detail/providers/{id} [put]
 // @Security BearerAuth
 func (c *ProviderController) UpdateProvider(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -190,7 +238,7 @@ func (c *ProviderController) UpdateProvider(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/{id} [delete]
+// @Router /provider-detail/providers/{id} [delete]
 // @Security BearerAuth
 func (c *ProviderController) DeleteProvider(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -236,7 +284,7 @@ func (c *ProviderController) DeleteProvider(ctx *gin.Context) {
 // @Success 200 {object} dtos.PaginatedResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/search [get]
+// @Router /provider-detail/providers/search [get]
 // @Security BearerAuth
 func (c *ProviderController) SearchProviders(ctx *gin.Context) {
     var req dtos.ProviderSearchRequestDTO
@@ -299,7 +347,7 @@ func (c *ProviderController) SearchProviders(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/summary [get]
+// @Router /provider-detail/providers/summary [get]
 // @Security BearerAuth
 func (c *ProviderController) GetProviderSummary(ctx *gin.Context) {
     var req dtos.ProviderSearchRequestDTO
@@ -336,7 +384,7 @@ func (c *ProviderController) GetProviderSummary(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/stats [get]
+// @Router /provider-detail/providers/stats [get]
 // @Security BearerAuth
 func (c *ProviderController) GetProviderStats(ctx *gin.Context) {
     stats, err := c.providerService.GetProviderStats()
@@ -366,7 +414,7 @@ func (c *ProviderController) GetProviderStats(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/report [post]
+// @Router /provider-detail/providers/report [post]
 // @Security BearerAuth
 func (c *ProviderController) GenerateReport(ctx *gin.Context) {
     var req dtos.ProviderReportRequestDTO
@@ -406,7 +454,7 @@ func (c *ProviderController) GenerateReport(ctx *gin.Context) {
 // @Success 200 {file} file "Exported report file"
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/export [post]
+// @Router /provider-detail/providers/export [post]
 // @Security BearerAuth
 func (c *ProviderController) ExportReport(ctx *gin.Context) {
     var req dtos.ProviderReportRequestDTO
@@ -444,7 +492,7 @@ func (c *ProviderController) ExportReport(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/provinces [get]
+// @Router /provider-detail/providers/provinces [get]
 // @Security BearerAuth
 func (c *ProviderController) GetProvinces(ctx *gin.Context) {
     provinces, err := c.providerService.GetProvinces()
@@ -471,7 +519,7 @@ func (c *ProviderController) GetProvinces(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /providers/types [get]
+// @Router /provider-detail/providers/types [get]
 // @Security BearerAuth
 func (c *ProviderController) GetProviderTypes(ctx *gin.Context) {
     types, err := c.providerService.GetProviderTypes()
@@ -522,7 +570,7 @@ func (c *TemplateController) SetupRoutes(api *gin.RouterGroup) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /templates [get]
+// @Router /provider-detail/providers/templates [get]
 // @Security BearerAuth
 func (c *TemplateController) GetTemplates(ctx *gin.Context) {
     templates, err := c.templateService.GetAllTemplates()
@@ -552,7 +600,7 @@ func (c *TemplateController) GetTemplates(ctx *gin.Context) {
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /templates/{id} [get]
+// @Router /provider-detail/providers/templates/{id} [get]
 // @Security BearerAuth
 func (c *TemplateController) GetTemplate(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -602,7 +650,7 @@ func (c *TemplateController) GetTemplate(ctx *gin.Context) {
 // @Success 201 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /templates [post]
+// @Router /provider-detail/providers/templates [post]
 // @Security BearerAuth
 func (c *TemplateController) CreateTemplate(ctx *gin.Context) {
     var req dtos.CreateTemplateRequestDTO
@@ -645,7 +693,7 @@ func (c *TemplateController) CreateTemplate(ctx *gin.Context) {
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /templates/{id} [put]
+// @Router /provider-detail/providers/templates/{id} [put]
 // @Security BearerAuth
 func (c *TemplateController) UpdateTemplate(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -704,7 +752,7 @@ func (c *TemplateController) UpdateTemplate(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /templates/{id} [delete]
+// @Router /provider-detail/providers/templates/{id} [delete]
 // @Security BearerAuth
 func (c *TemplateController) DeleteTemplate(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -766,7 +814,7 @@ func (c *ScheduleController) SetupRoutes(api *gin.RouterGroup) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /schedules [get]
+// @Router /provider-detail/providers/schedules [get]
 // @Security BearerAuth
 func (c *ScheduleController) GetSchedules(ctx *gin.Context) {
     schedules, err := c.scheduleService.GetAllSchedules()
@@ -795,7 +843,7 @@ func (c *ScheduleController) GetSchedules(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
-// @Router /schedules/{id} [get]
+// @Router /provider-detail/providers/schedules/{id} [get]
 // @Security BearerAuth
 func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -836,7 +884,7 @@ func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
 // @Success 201 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /schedules [post]
+// @Router /provider-detail/providers/schedules [post]
 // @Security BearerAuth
 func (c *ScheduleController) CreateSchedule(ctx *gin.Context) {
     var req dtos.CreateScheduleRequestDTO
@@ -877,7 +925,7 @@ func (c *ScheduleController) CreateSchedule(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /schedules/{id} [put]
+// @Router /provider-detail/providers/schedules/{id} [put]
 // @Security BearerAuth
 func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -927,7 +975,7 @@ func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /schedules/{id} [delete]
+// @Router /provider-detail/providers/schedules/{id} [delete]
 // @Security BearerAuth
 func (c *ScheduleController) DeleteSchedule(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -966,7 +1014,7 @@ func (c *ScheduleController) DeleteSchedule(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /schedules/{id}/run [post]
+// @Router /provider-detail/providers/schedules/{id}/run [post]
 // @Security BearerAuth
 func (c *ScheduleController) RunSchedule(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -1031,7 +1079,7 @@ func (c *LogController) SetupRoutes(api *gin.RouterGroup) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /logs/sent-reports [get]
+// @Router /provider-detail/providers/logs/sent-reports [get]
 // @Security BearerAuth
 func (c *LogController) GetSentReportLogs(ctx *gin.Context) {
     var req dtos.LogSearchRequestDTO
@@ -1078,7 +1126,7 @@ func (c *LogController) GetSentReportLogs(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
-// @Router /logs/sent-reports/{id} [get]
+// @Router /provider-detail/providers/logs/sent-reports/{id} [get]
 // @Security BearerAuth
 func (c *LogController) GetSentReportLog(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -1137,7 +1185,7 @@ func (c *FieldController) SetupRoutes(api *gin.RouterGroup) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /fields [get]
+// @Router /provider-detail/providers/fields [get]
 // @Security BearerAuth
 func (c *FieldController) GetAvailableFields(ctx *gin.Context) {
     fields, err := c.fieldRepo.GetAllFields()
@@ -1166,7 +1214,7 @@ func (c *FieldController) GetAvailableFields(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /fields/by-category/{category} [get]
+// @Router /provider-detail/providers/fields/by-category/{category} [get]
 // @Security BearerAuth
 func (c *FieldController) GetFieldsByCategory(ctx *gin.Context) {
     category := ctx.Param("category")
