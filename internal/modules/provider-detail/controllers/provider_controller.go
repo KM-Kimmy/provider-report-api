@@ -37,6 +37,7 @@ func InitializeProviderDetailController(
 	logController := NewLogController(logService)
 	fieldController := NewFieldController(fieldRepo)
 
+	// Provider Routes
 	providers := providerRoute.Group("/providers")
 	{
 		// Provider CRUD Operations
@@ -107,6 +108,356 @@ func InitializeProviderDetailController(
 // @Success 201 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
+// @Router /provider-detail/schedules [post]
+// @Security BearerAuth
+func (c *ScheduleController) CreateSchedule(ctx *gin.Context) {
+    var req dtos.CreateScheduleRequestDTO
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid request body",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    schedule, err := c.scheduleService.CreateSchedule(req)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to create schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusCreated, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule created successfully",
+        Data:    schedule,
+    })
+}
+
+// UpdateSchedule godoc
+// @Summary Update schedule
+// @Description Update schedule information by ID
+// @Tags providerDetail
+// @Accept json
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Param schedule body dtos.UpdateScheduleRequestDTO true "Schedule update data"
+// @Success 200 {object} dtos.APIResponse
+// @Failure 400 {object} dtos.ErrorResponse
+// @Failure 500 {object} dtos.ErrorResponse
+// @Router /provider-detail/schedules/{id} [put]
+// @Security BearerAuth
+func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid schedule ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    var req dtos.UpdateScheduleRequestDTO
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid request body",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    schedule, err := c.scheduleService.UpdateSchedule(id, req)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to update schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule updated successfully",
+        Data:    schedule,
+    })
+}
+
+// DeleteSchedule godoc
+// @Summary Delete schedule
+// @Description Delete schedule by ID
+// @Tags providerDetail
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Success 200 {object} dtos.APIResponse
+// @Failure 400 {object} dtos.ErrorResponse
+// @Failure 500 {object} dtos.ErrorResponse
+// @Router /provider-detail/schedules/{id} [delete]
+// @Security BearerAuth
+func (c *ScheduleController) DeleteSchedule(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid schedule ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    err = c.scheduleService.DeleteSchedule(id)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to delete schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule deleted successfully",
+    })
+}
+
+// RunSchedule godoc
+// @Summary Run schedule manually
+// @Description Execute a schedule manually by ID
+// @Tags providerDetail
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Success 200 {object} dtos.APIResponse
+// @Failure 400 {object} dtos.ErrorResponse
+// @Failure 500 {object} dtos.ErrorResponse
+// @Router /provider-detail/schedules/{id}/run [post]
+// @Security BearerAuth
+func (c *ScheduleController) RunSchedule(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid schedule ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    result, err := c.scheduleService.RunSchedule(id)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to run schedule",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Schedule executed successfully",
+        Data:    result,
+    })
+}
+
+// ================= LOG CONTROLLER =================
+
+type LogController struct {
+    logService *services.LogService
+}
+
+func NewLogController(logService *services.LogService) *LogController {
+    return &LogController{
+        logService: logService,
+    }
+}
+
+// GetSentReportLogs godoc
+// @Summary Get sent report logs
+// @Description Get paginated list of sent report logs with optional filters
+// @Tags providerDetail
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Param start_date query string false "Start date (YYYY-MM-DD)"
+// @Param end_date query string false "End date (YYYY-MM-DD)"
+// @Param status query string false "Log status"
+// @Success 200 {object} dtos.APIResponse
+// @Failure 400 {object} dtos.ErrorResponse
+// @Failure 500 {object} dtos.ErrorResponse
+// @Router /provider-detail/logs/sent-reports [get]
+// @Security BearerAuth
+func (c *LogController) GetSentReportLogs(ctx *gin.Context) {
+    var req dtos.LogSearchRequestDTO
+    if err := ctx.ShouldBindQuery(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid query parameters",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    // Set default pagination
+    if req.Page == 0 {
+        req.Page = 1
+    }
+    if req.Limit == 0 {
+        req.Limit = 10
+    }
+
+    result, err := c.logService.GetSentReportLogs(req)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get sent report logs",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Sent report logs retrieved successfully",
+        Data:    result,
+    })
+}
+
+// GetSentReportLog godoc
+// @Summary Get sent report log by ID
+// @Description Get a single sent report log by its ID
+// @Tags providerDetail
+// @Produce json
+// @Param id path int true "Log ID"
+// @Success 200 {object} dtos.APIResponse
+// @Failure 400 {object} dtos.ErrorResponse
+// @Failure 404 {object} dtos.ErrorResponse
+// @Router /provider-detail/logs/sent-reports/{id} [get]
+// @Security BearerAuth
+func (c *LogController) GetSentReportLog(ctx *gin.Context) {
+    idStr := ctx.Param("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid log ID",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    log, err := c.logService.GetSentReportLog(id)
+    if err != nil {
+        ctx.JSON(http.StatusNotFound, dtos.ErrorResponse{
+            Code:    http.StatusNotFound,
+            Message: "Log not found",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Log retrieved successfully",
+        Data:    log,
+    })
+}
+
+// ================= FIELD CONTROLLER =================
+
+type FieldController struct {
+    fieldRepo *repositories.FieldRepository
+}
+
+func NewFieldController(fieldRepo *repositories.FieldRepository) *FieldController {
+    return &FieldController{
+        fieldRepo: fieldRepo,
+    }
+}
+
+// GetAvailableFields godoc
+// @Summary Get available fields
+// @Description Get list of all available fields for reports
+// @Tags providerDetail
+// @Produce json
+// @Success 200 {object} dtos.APIResponse
+// @Failure 500 {object} dtos.ErrorResponse
+// @Router /provider-detail/fields [get]
+// @Security BearerAuth
+func (c *FieldController) GetAvailableFields(ctx *gin.Context) {
+    fields, err := c.fieldRepo.GetAllFields()
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get available fields",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Available fields retrieved successfully",
+        Data:    fields,
+    })
+}
+
+// GetFieldsByCategory godoc
+// @Summary Get fields by category
+// @Description Get fields filtered by category (header, data, summary)
+// @Tags providerDetail
+// @Produce json
+// @Param category path string true "Field category" Enums(header, data, summary)
+// @Success 200 {object} dtos.APIResponse
+// @Failure 400 {object} dtos.ErrorResponse
+// @Failure 500 {object} dtos.ErrorResponse
+// @Router /provider-detail/fields/by-category/{category} [get]
+// @Security BearerAuth
+func (c *FieldController) GetFieldsByCategory(ctx *gin.Context) {
+    category := ctx.Param("category")
+    
+    // Validate category
+    validCategories := map[string]bool{
+        "header":  true,
+        "data":    true,
+        "summary": true,
+    }
+    
+    if !validCategories[category] {
+        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
+            Code:    http.StatusBadRequest,
+            Message: "Invalid category",
+            Details: "Category must be one of: header, data, summary",
+        })
+        return
+    }
+
+    fields, err := c.fieldRepo.GetFieldsByCategory(category)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
+            Code:    http.StatusInternalServerError,
+            Message: "Failed to get fields by category",
+            Details: err.Error(),
+        })
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dtos.APIResponse{
+        Success: true,
+        Message: "Fields retrieved successfully",
+        Data:    fields,
+    })
+}
+
 // @Router /provider-detail/providers [post]
 // @Security BearerAuth
 func (c *ProviderController) CreateProvider(ctx *gin.Context) {
@@ -551,18 +902,6 @@ func NewTemplateController(templateService *services.TemplateService) *TemplateC
     }
 }
 
-// SetupRoutes sets up all template-related routes
-func (c *TemplateController) SetupRoutes(api *gin.RouterGroup) {
-    templates := api.Group("/templates")
-    {
-        templates.GET("", c.GetTemplates)
-        templates.GET("/:id", c.GetTemplate)
-        templates.POST("", c.CreateTemplate)
-        templates.PUT("/:id", c.UpdateTemplate)
-        templates.DELETE("/:id", c.DeleteTemplate)
-    }
-}
-
 // GetTemplates godoc
 // @Summary Get all templates
 // @Description Get list of all report templates
@@ -570,7 +909,7 @@ func (c *TemplateController) SetupRoutes(api *gin.RouterGroup) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/templates [get]
+// @Router /provider-detail/templates [get]
 // @Security BearerAuth
 func (c *TemplateController) GetTemplates(ctx *gin.Context) {
     templates, err := c.templateService.GetAllTemplates()
@@ -600,7 +939,7 @@ func (c *TemplateController) GetTemplates(ctx *gin.Context) {
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/templates/{id} [get]
+// @Router /provider-detail/templates/{id} [get]
 // @Security BearerAuth
 func (c *TemplateController) GetTemplate(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -650,7 +989,7 @@ func (c *TemplateController) GetTemplate(ctx *gin.Context) {
 // @Success 201 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/templates [post]
+// @Router /provider-detail/templates [post]
 // @Security BearerAuth
 func (c *TemplateController) CreateTemplate(ctx *gin.Context) {
     var req dtos.CreateTemplateRequestDTO
@@ -693,7 +1032,7 @@ func (c *TemplateController) CreateTemplate(ctx *gin.Context) {
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/templates/{id} [put]
+// @Router /provider-detail/templates/{id} [put]
 // @Security BearerAuth
 func (c *TemplateController) UpdateTemplate(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -752,7 +1091,7 @@ func (c *TemplateController) UpdateTemplate(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/templates/{id} [delete]
+// @Router /provider-detail/templates/{id} [delete]
 // @Security BearerAuth
 func (c *TemplateController) DeleteTemplate(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -794,19 +1133,6 @@ func NewScheduleController(scheduleService *services.ScheduleService) *ScheduleC
     }
 }
 
-// SetupRoutes sets up all schedule-related routes
-func (c *ScheduleController) SetupRoutes(api *gin.RouterGroup) {
-    schedules := api.Group("/schedules")
-    {
-        schedules.GET("", c.GetSchedules)
-        schedules.GET("/:id", c.GetSchedule)
-        schedules.POST("", c.CreateSchedule)
-        schedules.PUT("/:id", c.UpdateSchedule)
-        schedules.DELETE("/:id", c.DeleteSchedule)
-        schedules.POST("/:id/run", c.RunSchedule)
-    }
-}
-
 // GetSchedules godoc
 // @Summary Get all schedules
 // @Description Get list of all report schedules
@@ -814,7 +1140,7 @@ func (c *ScheduleController) SetupRoutes(api *gin.RouterGroup) {
 // @Produce json
 // @Success 200 {object} dtos.APIResponse
 // @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/schedules [get]
+// @Router /provider-detail/schedules [get]
 // @Security BearerAuth
 func (c *ScheduleController) GetSchedules(ctx *gin.Context) {
     schedules, err := c.scheduleService.GetAllSchedules()
@@ -843,7 +1169,7 @@ func (c *ScheduleController) GetSchedules(ctx *gin.Context) {
 // @Success 200 {object} dtos.APIResponse
 // @Failure 400 {object} dtos.ErrorResponse
 // @Failure 404 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/schedules/{id} [get]
+// @Router /provider-detail/schedules/{id} [get]
 // @Security BearerAuth
 func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
     idStr := ctx.Param("id")
@@ -874,188 +1200,7 @@ func (c *ScheduleController) GetSchedule(ctx *gin.Context) {
     })
 }
 
-// CreateSchedule godoc
-// @Summary Create a new schedule
-// @Description Create a new report schedule
-// @Tags providerDetail
-// @Accept json
-// @Produce json
-// @Param schedule body dtos.CreateScheduleRequestDTO true "Schedule data"
-// @Success 201 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/schedules [post]
-// @Security BearerAuth
-func (c *ScheduleController) CreateSchedule(ctx *gin.Context) {
-    var req dtos.CreateScheduleRequestDTO
-    if err := ctx.ShouldBindJSON(&req); err != nil {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid request body",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    schedule, err := c.scheduleService.CreateSchedule(req)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
-            Code:    http.StatusInternalServerError,
-            Message: "Failed to create schedule",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusCreated, dtos.APIResponse{
-        Success: true,
-        Message: "Schedule created successfully",
-        Data:    schedule,
-    })
-}
-
-// UpdateSchedule godoc
-// @Summary Update schedule
-// @Description Update schedule information by ID
-// @Tags providerDetail
-// @Accept json
-// @Produce json
-// @Param id path int true "Schedule ID"
-// @Param schedule body dtos.UpdateScheduleRequestDTO true "Schedule update data"
-// @Success 200 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/schedules/{id} [put]
-// @Security BearerAuth
-func (c *ScheduleController) UpdateSchedule(ctx *gin.Context) {
-    idStr := ctx.Param("id")
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid schedule ID",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    var req dtos.UpdateScheduleRequestDTO
-    if err := ctx.ShouldBindJSON(&req); err != nil {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid request body",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    schedule, err := c.scheduleService.UpdateSchedule(id, req)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
-            Code:    http.StatusInternalServerError,
-            Message: "Failed to update schedule",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusOK, dtos.APIResponse{
-        Success: true,
-        Message: "Schedule updated successfully",
-        Data:    schedule,
-    })
-}
-
-// DeleteSchedule godoc
-// @Summary Delete schedule
-// @Description Delete schedule by ID
-// @Tags providerDetail
-// @Produce json
-// @Param id path int true "Schedule ID"
-// @Success 200 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/schedules/{id} [delete]
-// @Security BearerAuth
-func (c *ScheduleController) DeleteSchedule(ctx *gin.Context) {
-    idStr := ctx.Param("id")
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid schedule ID",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    err = c.scheduleService.DeleteSchedule(id)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
-            Code:    http.StatusInternalServerError,
-            Message: "Failed to delete schedule",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusOK, dtos.APIResponse{
-        Success: true,
-        Message: "Schedule deleted successfully",
-    })
-}
-
-// RunSchedule godoc
-// @Summary Run schedule manually
-// @Description Execute a schedule manually by ID
-// @Tags providerDetail
-// @Produce json
-// @Param id path int true "Schedule ID"
-// @Success 200 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/schedules/{id}/run [post]
-// @Security BearerAuth
-func (c *ScheduleController) RunSchedule(ctx *gin.Context) {
-    idStr := ctx.Param("id")
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid schedule ID",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    result, err := c.scheduleService.RunSchedule(id)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
-            Code:    http.StatusInternalServerError,
-            Message: "Failed to run schedule",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusOK, dtos.APIResponse{
-        Success: true,
-        Message: "Schedule executed successfully",
-        Data:    result,
-    })
-}
-
 // ================= LOG CONTROLLER =================
-
-type LogController struct {
-    logService *services.LogService
-}
-
-func NewLogController(logService *services.LogService) *LogController {
-    return &LogController{
-        logService: logService,
-    }
-}
 
 // SetupRoutes sets up all log-related routes
 func (c *LogController) SetupRoutes(api *gin.RouterGroup) {
@@ -1065,109 +1210,7 @@ func (c *LogController) SetupRoutes(api *gin.RouterGroup) {
         logs.GET("/sent-reports/:id", c.GetSentReportLog)
     }
 }
-
-// GetSentReportLogs godoc
-// @Summary Get sent report logs
-// @Description Get paginated list of sent report logs with optional filters
-// @Tags providerDetail
-// @Produce json
-// @Param page query int false "Page number" default(1)
-// @Param limit query int false "Items per page" default(10)
-// @Param start_date query string false "Start date (YYYY-MM-DD)"
-// @Param end_date query string false "End date (YYYY-MM-DD)"
-// @Param status query string false "Log status"
-// @Success 200 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/logs/sent-reports [get]
-// @Security BearerAuth
-func (c *LogController) GetSentReportLogs(ctx *gin.Context) {
-    var req dtos.LogSearchRequestDTO
-    if err := ctx.ShouldBindQuery(&req); err != nil {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid query parameters",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    // Set default pagination
-    if req.Page == 0 {
-        req.Page = 1
-    }
-    if req.Limit == 0 {
-        req.Limit = 10
-    }
-
-    result, err := c.logService.GetSentReportLogs(req)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
-            Code:    http.StatusInternalServerError,
-            Message: "Failed to get sent report logs",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusOK, dtos.APIResponse{
-        Success: true,
-        Message: "Sent report logs retrieved successfully",
-        Data:    result,
-    })
-}
-
-// GetSentReportLog godoc
-// @Summary Get sent report log by ID
-// @Description Get a single sent report log by its ID
-// @Tags providerDetail
-// @Produce json
-// @Param id path int true "Log ID"
-// @Success 200 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 404 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/logs/sent-reports/{id} [get]
-// @Security BearerAuth
-func (c *LogController) GetSentReportLog(ctx *gin.Context) {
-    idStr := ctx.Param("id")
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid log ID",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    log, err := c.logService.GetSentReportLog(id)
-    if err != nil {
-        ctx.JSON(http.StatusNotFound, dtos.ErrorResponse{
-            Code:    http.StatusNotFound,
-            Message: "Log not found",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusOK, dtos.APIResponse{
-        Success: true,
-        Message: "Log retrieved successfully",
-        Data:    log,
-    })
-}
-
 // ================= FIELD CONTROLLER =================
-
-type FieldController struct {
-    fieldRepo *repositories.FieldRepository
-}
-
-func NewFieldController(fieldRepo *repositories.FieldRepository) *FieldController {
-    return &FieldController{
-        fieldRepo: fieldRepo,
-    }
-}
 
 // SetupRoutes sets up all field-related routes
 func (c *FieldController) SetupRoutes(api *gin.RouterGroup) {
@@ -1176,78 +1219,4 @@ func (c *FieldController) SetupRoutes(api *gin.RouterGroup) {
         fields.GET("", c.GetAvailableFields)
         fields.GET("/by-category/:category", c.GetFieldsByCategory)
     }
-}
-
-// GetAvailableFields godoc
-// @Summary Get available fields
-// @Description Get list of all available fields for reports
-// @Tags providerDetail
-// @Produce json
-// @Success 200 {object} dtos.APIResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/fields [get]
-// @Security BearerAuth
-func (c *FieldController) GetAvailableFields(ctx *gin.Context) {
-    fields, err := c.fieldRepo.GetAllFields()
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
-            Code:    http.StatusInternalServerError,
-            Message: "Failed to get available fields",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusOK, dtos.APIResponse{
-        Success: true,
-        Message: "Available fields retrieved successfully",
-        Data:    fields,
-    })
-}
-
-// GetFieldsByCategory godoc
-// @Summary Get fields by category
-// @Description Get fields filtered by category (header, data, summary)
-// @Tags providerDetail
-// @Produce json
-// @Param category path string true "Field category" Enums(header, data, summary)
-// @Success 200 {object} dtos.APIResponse
-// @Failure 400 {object} dtos.ErrorResponse
-// @Failure 500 {object} dtos.ErrorResponse
-// @Router /provider-detail/providers/fields/by-category/{category} [get]
-// @Security BearerAuth
-func (c *FieldController) GetFieldsByCategory(ctx *gin.Context) {
-    category := ctx.Param("category")
-    
-    // Validate category
-    validCategories := map[string]bool{
-        "header":  true,
-        "data":    true,
-        "summary": true,
-    }
-    
-    if !validCategories[category] {
-        ctx.JSON(http.StatusBadRequest, dtos.ErrorResponse{
-            Code:    http.StatusBadRequest,
-            Message: "Invalid category",
-            Details: "Category must be one of: header, data, summary",
-        })
-        return
-    }
-
-    fields, err := c.fieldRepo.GetFieldsByCategory(category)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, dtos.ErrorResponse{
-            Code:    http.StatusInternalServerError,
-            Message: "Failed to get fields by category",
-            Details: err.Error(),
-        })
-        return
-    }
-
-    ctx.JSON(http.StatusOK, dtos.APIResponse{
-        Success: true,
-        Message: "Fields retrieved successfully",
-        Data:    fields,
-    })
 }

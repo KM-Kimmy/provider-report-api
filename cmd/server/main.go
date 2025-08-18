@@ -24,13 +24,6 @@ import (
 // @description API for Provider Detail Report Management System
 // @termsOfService http://swagger.io/terms/
 
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
-
 // @host localhost:8777
 // @BasePath /tpa-api/report
 // @schemes http https
