@@ -133,16 +133,24 @@ func getColumnWidths(numCols int) []float64 {
 }
 
 func getRowValues(provider models.Provider, detailFields []string) []string {
+    // Helper function to safely get string value from pointer
+    getStringValue := func(ptr *string) string {
+        if ptr != nil {
+            return *ptr
+        }
+        return ""
+    }
+    
     fieldMap := map[string]string{
         "D1":  fmt.Sprintf("%d", provider.ID),
         "D2":  provider.ProviderType,
-        "D4":  provider.ProviderNameTH,
-        "D5":  provider.ProviderNameEN,
-        "D6":  provider.TelephoneNumber,
-        "D8":  provider.District,
+        "D4":  provider.NameThai,
+        "D5":  getStringValue(provider.NameEng),
+        "D6":  getStringValue(provider.GeneralPhoneNo),
+        "D8":  getStringValue(provider.District),
         "D9":  provider.Province,
         "D11": provider.ProviderCode,
-        "D13": provider.Email,
+        "D13": getStringValue(provider.Email),
         "D14": func() string {
             if provider.IsTPANetwork {
                 return "Yes"
@@ -150,7 +158,7 @@ func getRowValues(provider models.Provider, detailFields []string) []string {
             return "No"
         }(),
         "D15": provider.ProviderStatus,
-        "D17": provider.Country,
+        "D17": getStringValue(provider.Country),
     }
     
     var values []string
@@ -158,10 +166,10 @@ func getRowValues(provider models.Provider, detailFields []string) []string {
         // Default values
         values = []string{
             fmt.Sprintf("%d", provider.ID),
-            provider.ProviderNameTH,
+            provider.NameThai,
             provider.ProviderType,
             provider.Province,
-            provider.TelephoneNumber,
+            getStringValue(provider.GeneralPhoneNo),
             provider.ProviderStatus,
         }
     } else {

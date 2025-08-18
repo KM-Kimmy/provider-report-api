@@ -122,11 +122,11 @@ func getExcelColumnHeaders(detailFields []string) []string {
     fieldMap := map[string]string{
         "D1":  "ID",
         "D2":  "Provider Type",
-        "D3":  "Status",
+        "D3":  "Provider Status",
         "D4":  "Provider Name (TH)",
         "D5":  "Provider Name (EN)",
-        "D6":  "Telephone",
-        "D7":  "Address",
+        "D6":  "General Phone",
+        "D7":  "Direct Phone",
         "D8":  "District",
         "D9":  "Province",
         "D10": "Post Code",
@@ -134,7 +134,7 @@ func getExcelColumnHeaders(detailFields []string) []string {
         "D12": "Business Type",
         "D13": "Email",
         "D14": "TPA Network",
-        "D15": "Provider Status",
+        "D15": "Register Status",
         "D16": "Region",
         "D17": "Country",
         "D18": "Created Date",
@@ -145,7 +145,7 @@ func getExcelColumnHeaders(detailFields []string) []string {
         // Default fields
         headers = []string{
             "ID", "Provider Name (TH)", "Provider Type", 
-            "Province", "Telephone", "Email", "Status",
+            "Province", "General Phone", "Email", "Provider Status",
         }
     } else {
         for _, field := range detailFields {
@@ -159,29 +159,37 @@ func getExcelColumnHeaders(detailFields []string) []string {
 }
 
 func getExcelRowValues(provider models.Provider, detailFields []string) []interface{} {
+    // Helper function to safely get string value from pointer
+    getStringValue := func(ptr *string) string {
+        if ptr != nil {
+            return *ptr
+        }
+        return ""
+    }
+    
     fieldMap := map[string]interface{}{
         "D1":  provider.ID,
         "D2":  provider.ProviderType,
-        "D3":  provider.Status,
-        "D4":  provider.ProviderNameTH,
-        "D5":  provider.ProviderNameEN,
-        "D6":  provider.TelephoneNumber,
-        "D7":  provider.Address,
-        "D8":  provider.District,
+        "D3":  provider.ProviderStatus,
+        "D4":  provider.NameThai,
+        "D5":  getStringValue(provider.NameEng),
+        "D6":  getStringValue(provider.GeneralPhoneNo),
+        "D7":  getStringValue(provider.DirectPhoneNo),
+        "D8":  getStringValue(provider.District),
         "D9":  provider.Province,
-        "D10": provider.PostCode,
+        "D10": getStringValue(provider.PostCode),
         "D11": provider.ProviderCode,
-        "D12": provider.BusinessType,
-        "D13": provider.Email,
+        "D12": getStringValue(provider.BusinessType),
+        "D13": getStringValue(provider.Email),
         "D14": func() string {
             if provider.IsTPANetwork {
                 return "Yes"
             }
             return "No"
         }(),
-        "D15": provider.ProviderStatus,
-        "D16": provider.Region,
-        "D17": provider.Country,
+        "D15": getStringValue(provider.RegisterStatus),
+        "D16": getStringValue(provider.Region),
+        "D17": getStringValue(provider.Country),
         "D18": provider.CreatedAt.Format("2006-01-02"),
     }
     
@@ -190,11 +198,11 @@ func getExcelRowValues(provider models.Provider, detailFields []string) []interf
         // Default values
         values = []interface{}{
             provider.ID,
-            provider.ProviderNameTH,
+            provider.NameThai,
             provider.ProviderType,
             provider.Province,
-            provider.TelephoneNumber,
-            provider.Email,
+            getStringValue(provider.GeneralPhoneNo),
+            getStringValue(provider.Email),
             provider.ProviderStatus,
         }
     } else {

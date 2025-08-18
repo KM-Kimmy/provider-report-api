@@ -1,20 +1,22 @@
 package main
 
 import (
-    "log"
-    "net/http"
+	"fmt"
+	"log"
+	"net/http"
 
-    "github.com/gin-gonic/gin"
-    "github.com/joho/godotenv"
-    config "provider-report-api/configs" 
-    // "provider-report-api/internal/middleware"
-    providerControllers "provider-report-api/internal/modules/provider-detail/controllers"
-    providerRepositories "provider-report-api/internal/modules/provider-detail/repositories"
-    providerServices "provider-report-api/internal/modules/provider-detail/services"
-    
-    _ "provider-report-api/cmd/docs"
-    swaggerfiles "github.com/swaggo/files"
-    ginSwagger "github.com/swaggo/gin-swagger"
+	docs "provider-report-api/cmd/docs"
+	config "provider-report-api/configs"
+	router "provider-report-api/internal/routers"
+	providerRepositories "provider-report-api/internal/modules/provider-detail/repositories"
+	providerServices "provider-report-api/internal/modules/provider-detail/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
+	"github.com/joho/godotenv"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // @title Provider Detail Report API
@@ -22,150 +24,132 @@ import (
 // @description API for Provider Detail Report Management System
 // @termsOfService http://swagger.io/terms/
 
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
-
-// @host localhost:8080
-// @BasePath /api/v1
+// @host localhost:8777
+// @BasePath /tpa-api/report
 // @schemes http https
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+
+// corsMiddleware handles CORS settings for the API
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Allow specific origins
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		// Allow specific methods
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		// Allow specific headers
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With")
+		// Allow credentials
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		// Handle preflight requests
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func main() {
-    // Load environment variables
-    if err := godotenv.Load(); err != nil {
-        log.Println("No .env file found")
-    }
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
 
-    // Load configuration
-    cfg := config.Load()
+	// Load configuration
+	cfg := config.Load()
 
-    // Initialize database
-    db, err := config.Initialize(cfg.GetDatabaseURL())
-    if err != nil {
-        log.Fatal("Failed to connect to database:", err)
-    }
-    defer db.Close()
+	// Initialize database
+	db, err := config.Initialize(cfg.GetDatabaseURL())
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	defer db.Close()
 
-    // Initialize repositories
-    providerRepo := providerRepositories.NewProviderRepository(db)
-    templateRepo := providerRepositories.NewTemplateRepository(db)
-    scheduleRepo := providerRepositories.NewScheduleRepository(db)
-    logRepo := providerRepositories.NewLogRepository(db)
-    fieldRepo := providerRepositories.NewFieldRepository(db)
+	// Initialize repositories
+	providerRepo := providerRepositories.NewProviderRepository(db)
+	templateRepo := providerRepositories.NewTemplateRepository(db)
+	scheduleRepo := providerRepositories.NewScheduleRepository(db)
+	logRepo := providerRepositories.NewLogRepository(db)
+	fieldRepo := providerRepositories.NewFieldRepository(db)
 
-    // Initialize services
-    emailService := providerServices.NewEmailService(cfg)
-    exportService := providerServices.NewExportService()
-    providerService := providerServices.NewProviderService(providerRepo, exportService, fieldRepo)
-    templateService := providerServices.NewTemplateService(templateRepo, fieldRepo)
-    scheduleService := providerServices.NewScheduleService(scheduleRepo, templateRepo, emailService)
-    logService := providerServices.NewLogService(logRepo)
+	// Initialize services
+	emailService := providerServices.NewEmailService(cfg)
+	exportService := providerServices.NewExportService()
+	providerService := providerServices.NewProviderService(providerRepo, exportService, fieldRepo)
+	templateService := providerServices.NewTemplateService(templateRepo, fieldRepo)
+	scheduleService := providerServices.NewScheduleService(scheduleRepo, templateRepo, emailService)
+	logService := providerServices.NewLogService(logRepo)
 
-    // Initialize controllers
-    providerController := providerControllers.NewProviderController(providerService)
-    templateController := providerControllers.NewTemplateController(templateService)
-    scheduleController := providerControllers.NewScheduleController(scheduleService)
-    logController := providerControllers.NewLogController(logService)
-    fieldController := providerControllers.NewFieldController(fieldRepo)
+	// Create dependencies struct
+	deps := &router.Dependencies{
+		ProviderService: providerService,
+		TemplateService: templateService,
+		ScheduleService: scheduleService,
+		LogService:      logService,
+		FieldRepo:       fieldRepo,
+	}
 
-    // Setup router
-    router := gin.Default()
+	// Setup router
+	r := gin.Default()
 
-    // Add middleware
-    router.Use(gin.Recovery())
-    
-    // หากต้องการใช้ CORS และ Logger สามารถเพิ่ม middleware เหล่านี้ได้:
-    // router.Use(cors.Default()) // ต้อง import "github.com/gin-contrib/cors"
-    // router.Use(gin.Logger())   // ใช้ gin's built-in logger
+	// Use CORS middleware
+	r.Use(corsMiddleware())
 
-    // Health check endpoint
-    router.GET("/health", func(c *gin.Context) {
-        if err := config.HealthCheck(db); err != nil {
-            c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unhealthy", "error": err.Error()})
-            return
-        }
-        c.JSON(http.StatusOK, gin.H{"status": "healthy"})
-    })
+	// Custom middleware to log errors
+	r.Use(func(c *gin.Context) {
+		c.Next()
+		if len(c.Errors) > 0 {
+			for _, e := range c.Errors {
+				fmt.Printf("Error: %v", e)
+			}
+		}
+	})
 
-    // Swagger endpoint
-    router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	// Health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		if err := config.HealthCheck(db); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unhealthy", "error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+	})
 
-    // API routes
-    api := router.Group("/api/v1")
-    {
-        // Provider Detail Report routes
-        providers := api.Group("/providers")
-        {
-            // CRUD Operations (แก้ไข method name)
-            providers.POST("", providerController.CreateProvider)           // Create new provider
-            providers.GET("/:id", providerController.GetProvider)           // แก้จาก GetProviderByID เป็น GetProvider
-            providers.PUT("/:id", providerController.UpdateProvider)        // Update provider
-            providers.DELETE("/:id", providerController.DeleteProvider)     // Delete provider
-            
-            // Search and Filter Operations
-            providers.GET("/search", providerController.SearchProviders)
-            
-            // Report Operations
-            providers.POST("/report", providerController.GenerateReport)
-            providers.POST("/export", providerController.ExportReport)
-            
-            // Summary and Statistics
-            providers.GET("/summary", providerController.GetProviderSummary)
-            providers.GET("/stats", providerController.GetProviderStats)
-            
-            // Reference Data
-            providers.GET("/provinces", providerController.GetProvinces)
-            providers.GET("/types", providerController.GetProviderTypes)
-        }
+	// Swagger endpoint
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-        // Template Management routes
-        templates := api.Group("/templates")
-        {
-            templates.GET("", templateController.GetTemplates)
-            templates.GET("/:id", templateController.GetTemplate)
-            templates.POST("", templateController.CreateTemplate)
-            templates.PUT("/:id", templateController.UpdateTemplate)
-            templates.DELETE("/:id", templateController.DeleteTemplate)
-        }
+	// Validator setup
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		// Register custom validation functions or tags here
+		_ = v // Use the validator as needed
+	}
 
-        // Schedule Management routes
-        schedules := api.Group("/schedules")
-        {
-            schedules.GET("", scheduleController.GetSchedules)
-            schedules.GET("/:id", scheduleController.GetSchedule)
-            schedules.POST("", scheduleController.CreateSchedule)
-            schedules.PUT("/:id", scheduleController.UpdateSchedule)
-            schedules.DELETE("/:id", scheduleController.DeleteSchedule)
-            schedules.POST("/:id/run", scheduleController.RunSchedule)
-        }
+	// Define base settings for Swagger API documentation. This setup includes specifying the title,
+	// description, and base path of the Swagger documentation, which enhances the discoverability
+	// and usability of the API by developers.
+	// programmatically set swagger info
+	docs.SwaggerInfo.Title = "TPA-API Report API Document"
+	docs.SwaggerInfo.Description = "This is a list of all Report's API paths, requests, and responses."
+	docs.SwaggerInfo.BasePath = "/tpa-api/report"
 
-        // Log Report routes
-        logs := api.Group("/logs")
-        {
-            logs.GET("/sent-reports", logController.GetSentReportLogs)
-            logs.GET("/sent-reports/:id", logController.GetSentReportLog)
-        }
+	// Pass dependencies to the router handler. All routes for the application modules are
+	// defined within the router.InitializeRoutes function, which organizes and centralizes route
+	// management, making the application easier to extend and maintain.
+	router.InitializeRoutes(r, deps)
 
-        // Available Fields routes
-        fields := api.Group("/fields")
-        {
-            fields.GET("", fieldController.GetAvailableFields)
-            fields.GET("/by-category/:category", fieldController.GetFieldsByCategory)
-        }
-    }
+	// Get port from config
+	port := cfg.ServerPort
+	if port == "" {
+		port = "8777"
+	}
 
-    port := cfg.ServerPort
-    if port == "" {
-        port = "8777"
-    }
+	log.Printf("Server starting on port %s", port)
+	log.Printf("Swagger UI available at: http://localhost:%s/swagger/index.html", port)
 
-    log.Printf("Server starting on port %s", port)
-    log.Printf("Swagger UI available at: http://localhost:%s/swagger/index.html", port)
-    log.Fatal(http.ListenAndServe(":"+port, router))
+	// Start the server
+	r.Run(":" + port)
 }

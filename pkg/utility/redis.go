@@ -1,7 +1,7 @@
 package utility
 
 import (
-	"provider-report-api/internal/modules/provider-detail/dtos"
+	shared "provider-report-api/internal/modules/shared/dtos"
 	"provider-report-api/pkg/vault"
 	"context"
 	"encoding/json"
@@ -12,11 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type UserActionAccessRights struct {
-	MenuID   int      `json:"menuId"`
-	MenuName string   `json:"menuName"`
-	Actions  []string `json:"actions"`
-}
+// Remove duplicate struct - use shared.UserActionAccessRights instead
 
 type RedisService struct {
 	client *redis.Client
